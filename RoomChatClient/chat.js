@@ -5,7 +5,7 @@ const connection = new signalR.HubConnectionBuilder()
     .withUrl("https://localhost:7263/chathub")
     .configureLogging(signalR.LogLevel.Information)
     .build();
-
+   
 const start = async () => {
     try {
         await connection.start();
@@ -33,6 +33,8 @@ const joinChat = async (user) => {
     try {
         const message = `${user} joined`;
         await connection.invoke("JoinChat", user, message);
+        
+        
     } catch (error) {
         console.log(error);
     }
@@ -42,6 +44,24 @@ const joinChat = async (user) => {
 const getUser = () => sessionStorage.getItem('user')
 
 // method for getting notified by server
+
+const connectedUsers= async()=>{
+
+    try {
+        await connection.on("UsersInRoom", (users) => {
+            const userList = document.getElementById("userList");
+            userList.innerHTML = ""; // Clear the user list
+            users.forEach((user) => {
+                const listItem = document.createElement("li");
+                listItem.innerText = user;
+                userList.appendChild(listItem);
+            });
+        });
+        await getUsersInRoom();
+    } catch (error) {
+        console.log(error);
+    }
+} 
 const receiveMessage = async () => {
     const currentUser = getUser();
     if (!currentUser)
@@ -52,8 +72,12 @@ const receiveMessage = async () => {
             appendMessage(message, messageClass);
             const alertSound = new Audio('chat-sound.mp3');
             alertSound.play();
+            
            
        })
+
+      
+
     } catch (error) {
         console.log(error);
     }
@@ -96,9 +120,11 @@ const sendMessage = async (user,message) => {
 
 // starting the app
 const startApp = async () => {
+    await connectedUsers();
     await start(); // connection will stablised
     await joinUser();
     await receiveMessage();
+    
 }
 
 startApp();
